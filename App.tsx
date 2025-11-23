@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play, Pause, RotateCcw, Settings as SettingsIcon,
-  Maximize, Minimize, Palette, Coffee, Clock
+  Maximize, Minimize, Palette, Coffee, Clock, ListTodo, Moon, Sun
 } from 'lucide-react';
 import {
-  TimerMode, ThemeType, Settings, Task, Session
+  TimerMode, ThemeType, Settings, Task, Session, WeatherType
 } from './types';
 import {
   DEFAULT_SETTINGS, THEMES, MOOD_CHANNELS, SMART_TIPS, MODE_LABELS
@@ -12,21 +12,48 @@ import {
 import { Sidebar } from './components/Sidebar';
 import { SettingsModal } from './components/SettingsModal';
 import { ThemeSelector } from './components/ThemeSelector';
+import { WeatherOverlay } from './components/WeatherOverlay';
 
 import { BrownNoise } from './components/BrownNoise';
 import { api } from './src/api';
 
-// Simple sound for timer finish
+// Sound effect for timer completion
 const playNotification = () => {
-  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Simple bell
-  audio.volume = 0.5;
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Bell sound
+  audio.volume = 0.7;
   audio.play().catch(() => { }); // Catch play promise errors (autoplay policy)
+};
+
+// Sound effect for button clicks
+const playClickSound = () => {
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2997/2997-preview.mp3'); // Click sound
+  audio.volume = 0.3;
+  audio.play().catch(() => { });
+};
+
+// Sound effect for pause
+const playPauseSound = () => {
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'); // Soft click
+  audio.volume = 0.4;
+  audio.play().catch(() => { });
+};
+
+// Sound effect for audio/mood selection
+const playAudioSelectSound = () => {
+  const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3'); // UI sound
+  audio.volume = 0.3;
+  audio.play().catch(() => { });
+};
+
+const isVideo = (url: string) => {
+  return /\.(mp4|webm|ogg)($|\?)/i.test(url);
 };
 
 const App: React.FC = () => {
   // --- Persisted State ---
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [theme, setTheme] = useState<ThemeType>(ThemeType.NATURE);
+  const [weather, setWeather] = useState<WeatherType>('none');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<Session[]>([]);
 
@@ -40,6 +67,8 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeMoodId, setActiveMoodId] = useState<string | null>(null);
   const [randomTip, setRandomTip] = useState('');
+  const [isPanelVisible, setIsPanelVisible] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   // Ref for interval to clear it properly
   const intervalRef = useRef<number | null>(null);
@@ -175,7 +204,14 @@ const App: React.FC = () => {
     resetTimer(newMode);
   };
 
-  const toggleTimer = () => setIsActive(!isActive);
+  const toggleTimer = () => {
+    if (!isActive) {
+      playClickSound();
+    } else {
+      playPauseSound();
+    }
+    setIsActive(!isActive);
+  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -209,19 +245,35 @@ const App: React.FC = () => {
   return (
     <div
       className={`min-h-screen w-full bg-cover bg-center transition-all duration-700 ease-in-out flex items-center justify-center p-4 md:p-8`}
-      style={{ backgroundImage: `url(${bgImage})` }}
+      style={{ backgroundImage: isVideo(bgImage) ? 'none' : `url(${bgImage})` }}
     >
-      <div className="absolute inset-0 bg-black/10"></div>
+      {isVideo(bgImage) && (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-1000"
+          src={bgImage}
+          onError={(e) => {
+            console.error("Video failed to load:", bgImage);
+            e.currentTarget.style.display = 'none';
+          }}
+        />
+      )}
+      <div className={`absolute inset-0 transition-colors duration-500 ${isDarkMode ? 'bg-black/30' : 'bg-black/10'
+        }`}></div>
+      <WeatherOverlay type={weather} />
 
-      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6 h-[85vh]">
+      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[85vh] lg:h-[85vh] h-auto">
 
         {/* Left Column - Main Focus Area */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        <div className="lg:col-span-2 flex flex-col gap-6 order-1 lg:order-none">
 
           {/* Timer Card */}
-          <div className="flex-1 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden">
+          <div className="flex-1 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden min-h-[50vh] lg:min-h-0">
             {/* Header */}
-            <div className="absolute top-6 left-6 flex items-center gap-2">
+            <div className="absolute top-4 left-6 flex items-center gap-2">
               <div className="p-2 bg-white/5 rounded-lg">
                 <Coffee size={20} className="text-white" />
               </div>
@@ -230,12 +282,12 @@ const App: React.FC = () => {
 
 
             {/* Mode Toggles */}
-            <div className="flex p-1 bg-black/10 rounded-full mb-12 backdrop-blur-[2px]">
+            <div className="flex p-1 bg-black/10 rounded-full mb-8 md:mb-12 backdrop-blur-[2px] scale-90 md:scale-100">
               {[TimerMode.FOCUS, TimerMode.SHORT_BREAK, TimerMode.LONG_BREAK].map((m) => (
                 <button
                   key={m}
                   onClick={() => switchMode(m)}
-                  className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${mode === m
+                  className={`px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-medium transition-all duration-300 ${mode === m
                     ? 'bg-white text-black shadow-sm scale-105'
                     : 'text-white/70 hover:text-white hover:bg-white/5'
                     }`}
@@ -246,7 +298,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Timer Display */}
-            <div className="text-[8rem] md:text-[10rem] font-bold text-white leading-none tracking-tighter drop-shadow-lg select-none font-[Inter] tabular-nums mb-8">
+            <div className="text-[6rem] md:text-[8rem] lg:text-[10rem] font-bold text-white leading-none tracking-tighter drop-shadow-lg select-none font-[Inter] tabular-nums mb-8 transition-all duration-300">
               {formatTime(timeLeft)}
             </div>
 
@@ -254,28 +306,28 @@ const App: React.FC = () => {
             <div className="flex items-center gap-6">
               <button
                 onClick={toggleTimer}
-                className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-black shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group"
+                className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center text-black shadow-lg hover:scale-110 active:scale-95 transition-all duration-300 group"
               >
                 {isActive ? (
-                  <Pause size={32} className="fill-current" />
+                  <Pause size={28} className="fill-current md:w-8 md:h-8" />
                 ) : (
-                  <Play size={32} className="fill-current ml-1" />
+                  <Play size={28} className="fill-current ml-1 md:w-8 md:h-8" />
                 )}
               </button>
 
               <button
                 onClick={() => resetTimer()}
-                className="w-14 h-14 bg-white/5 rounded-full flex items-center justify-center text-white hover:bg-white/10 hover:rotate-180 transition-all duration-500 backdrop-blur-sm border border-white/5"
+                className="w-12 h-12 md:w-14 md:h-14 bg-white/5 rounded-full flex items-center justify-center text-white hover:bg-white/10 hover:rotate-180 transition-all duration-500 backdrop-blur-sm border border-white/5"
               >
-                <RotateCcw size={24} />
+                <RotateCcw size={20} className="md:w-6 md:h-6" />
               </button>
             </div>
           </div>
 
           {/* Bottom Row - Stats & Controls */}
-          <div className="flex items-center justify-between px-6 py-4 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/5">
+          <div className="flex flex-col md:flex-row items-center justify-between px-6 py-4 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/5 gap-4 md:gap-0">
             {/* Daily Goal */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-8 w-full md:w-auto justify-between md:justify-start">
               <div className="flex flex-col gap-2">
                 <span className="text-white/60 text-xs font-bold tracking-wider uppercase">Daily Goal</span>
                 <div className="w-24 h-2 bg-black/20 rounded-full overflow-hidden">
@@ -289,7 +341,25 @@ const App: React.FC = () => {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-end">
+              <button
+                onClick={() => setIsPanelVisible(!isPanelVisible)}
+                className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${isPanelVisible ? 'text-white bg-white/10' : 'text-white/70 hover:text-white'
+                  }`}
+                title="Toggle Tasks Panel"
+              >
+                <ListTodo size={20} />
+              </button>
+              <div className="w-px h-4 bg-white/10"></div>
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`p-2 hover:bg-white/10 rounded-lg transition-colors ${isDarkMode ? 'text-white' : 'text-yellow-300'
+                  }`}
+                title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {isDarkMode ? <Moon size={20} /> : <Sun size={20} />}
+              </button>
+              <div className="w-px h-4 bg-white/10"></div>
               <button
                 onClick={() => setIsThemeSelectorOpen(true)}
                 className="p-2 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-colors"
@@ -315,7 +385,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Right Column - Sidebar & Tools */}
-        <div className="flex flex-col gap-6 h-full overflow-hidden">
+        <div className="flex flex-col gap-6 h-full overflow-hidden order-2 lg:order-none min-h-[500px] lg:min-h-0">
 
           {/* Audio Focus Card */}
           <div className="glass-panel rounded-3xl p-6 shrink-0">
@@ -334,7 +404,10 @@ const App: React.FC = () => {
               {MOOD_CHANNELS.map((channel) => (
                 <button
                   key={channel.id}
-                  onClick={() => setActiveMoodId(activeMoodId === channel.id ? null : channel.id)}
+                  onClick={() => {
+                    playAudioSelectSound();
+                    setActiveMoodId(activeMoodId === channel.id ? null : channel.id);
+                  }}
                   className={`p-3 rounded-xl flex items-center gap-3 transition-all duration-200 ${activeMoodId === channel.id
                     ? 'bg-white text-black shadow-sm'
                     : 'bg-black/10 text-white/70 hover:bg-black/20 hover:text-white'
@@ -348,7 +421,7 @@ const App: React.FC = () => {
 
             {/* Hidden Iframe for Audio */}
             {activeMoodId && (
-              <div className="hidden">
+              <div className="mt-4 aspect-video w-full rounded-xl overflow-hidden shadow-lg bg-black/20">
                 <iframe
                   width="100%"
                   height="100%"
@@ -369,45 +442,47 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Tasks & History Sidebar */}
-          <div className="flex-1 glass-panel rounded-3xl overflow-hidden flex flex-col">
-            <Sidebar
-              tasks={tasks}
-              onAddTask={async (task) => {
-                setTasks(prev => [task, ...prev]);
-                try {
-                  await api.createTask(task);
-                } catch (error) {
-                  console.error("Failed to create task:", error);
-                }
-              }}
-              onToggleTask={async (id, completed) => {
-                setTasks(prev => prev.map(t => t.id === id ? { ...t, completed } : t));
-                try {
-                  await api.updateTask(id, { completed });
-                } catch (error) {
-                  console.error("Failed to update task:", error);
-                }
-              }}
-              onDeleteTask={async (id) => {
-                setTasks(prev => prev.filter(t => t.id !== id));
-                try {
-                  await api.deleteTask(id);
-                } catch (error) {
-                  console.error("Failed to delete task:", error);
-                }
-              }}
-              onUpdateTaskTitle={async (id, title) => {
-                setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
-                try {
-                  await api.updateTask(id, { title });
-                } catch (error) {
-                  console.error("Failed to update task title:", error);
-                }
-              }}
-              history={history}
-            />
-          </div>
+          {/* Tasks & History Sidebar - Collapsible */}
+          {isPanelVisible && (
+            <div className="flex-1 glass-panel rounded-3xl overflow-hidden flex flex-col min-h-[300px] animate-fade-in-up">
+              <Sidebar
+                tasks={tasks}
+                onAddTask={async (task) => {
+                  setTasks(prev => [task, ...prev]);
+                  try {
+                    await api.createTask(task);
+                  } catch (error) {
+                    console.error("Failed to create task:", error);
+                  }
+                }}
+                onToggleTask={async (id, completed) => {
+                  setTasks(prev => prev.map(t => t.id === id ? { ...t, completed } : t));
+                  try {
+                    await api.updateTask(id, { completed });
+                  } catch (error) {
+                    console.error("Failed to update task:", error);
+                  }
+                }}
+                onDeleteTask={async (id) => {
+                  setTasks(prev => prev.filter(t => t.id !== id));
+                  try {
+                    await api.deleteTask(id);
+                  } catch (error) {
+                    console.error("Failed to delete task:", error);
+                  }
+                }}
+                onUpdateTaskTitle={async (id, title) => {
+                  setTasks(prev => prev.map(t => t.id === id ? { ...t, title } : t));
+                  try {
+                    await api.updateTask(id, { title });
+                  } catch (error) {
+                    console.error("Failed to update task title:", error);
+                  }
+                }}
+                history={history}
+              />
+            </div>
+          )}
 
         </div>
       </div>
@@ -425,6 +500,8 @@ const App: React.FC = () => {
         currentTheme={theme}
         onSelectTheme={handleThemeChange}
         onSelectBackground={handleBackgroundChange}
+        currentWeather={weather}
+        onSelectWeather={setWeather}
       />
     </div>
   );

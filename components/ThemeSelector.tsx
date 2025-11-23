@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Image as ImageIcon, Sun, Play, Camera, User } from 'lucide-react';
-import { ThemeType } from '../types';
-import { THEMES, BACKGROUND_IMAGES } from '../constants';
+import { X, Image as ImageIcon, Sun, Play, Camera, User, CloudRain, CloudSnow, CloudOff, Cloud, Sparkles } from 'lucide-react';
+import { ThemeType, WeatherType } from '../types';
+import { THEMES, BACKGROUND_IMAGES, MOTION_BACKGROUNDS } from '../constants';
 
 interface ThemeSelectorProps {
     isOpen: boolean;
@@ -9,6 +9,8 @@ interface ThemeSelectorProps {
     currentTheme: ThemeType;
     onSelectTheme: (theme: ThemeType) => void;
     onSelectBackground: (url: string) => void;
+    currentWeather: WeatherType;
+    onSelectWeather: (weather: WeatherType) => void;
 }
 
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
@@ -17,6 +19,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     currentTheme,
     onSelectTheme,
     onSelectBackground,
+    currentWeather,
+    onSelectWeather,
 }) => {
     const [activeTab, setActiveTab] = useState<'background' | 'weather'>('background');
     const [activeSubTab, setActiveSubTab] = useState<'motion' | 'stills' | 'personalize'>('stills');
@@ -138,14 +142,23 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 
                     {activeTab === 'background' && activeSubTab === 'motion' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {[1, 2, 3, 4].map((i) => (
-                                <div key={i} className="group relative aspect-video rounded-xl overflow-hidden border-2 border-white/5 bg-white/5 hover:border-white/20 transition-all cursor-pointer">
+                            {MOTION_BACKGROUNDS.map((bg) => (
+                                <div
+                                    key={bg.id}
+                                    onClick={() => onSelectBackground(bg.url)}
+                                    className="group relative aspect-video rounded-xl overflow-hidden border-2 border-white/5 bg-white/5 hover:border-white/20 transition-all cursor-pointer"
+                                >
+                                    <img
+                                        src={bg.thumbnail}
+                                        alt={bg.name}
+                                        className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                                    />
                                     <div className="absolute inset-0 flex items-center justify-center">
                                         <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform">
                                             <Play size={20} className="text-white fill-white" />
                                         </div>
                                     </div>
-                                    <div className="absolute bottom-4 left-4 text-white/60 text-sm font-medium">Motion Scene {i}</div>
+                                    <div className="absolute bottom-4 left-4 text-white font-medium shadow-black/50 drop-shadow-md">{bg.name}</div>
                                 </div>
                             ))}
                         </div>
@@ -165,9 +178,26 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                     )}
 
                     {activeTab === 'weather' && (
-                        <div className="flex flex-col items-center justify-center h-64 text-white/40">
-                            <Sun size={48} className="mb-4 opacity-50" />
-                            <p>Weather effects coming soon</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            {[
+                                { type: 'none', icon: <CloudOff size={24} />, label: 'None' },
+                                { type: 'rain', icon: <CloudRain size={24} />, label: 'Rain' },
+                                { type: 'snow', icon: <CloudSnow size={24} />, label: 'Snow' },
+                                { type: 'fog', icon: <Cloud size={24} />, label: 'Fog' },
+                                { type: 'particles', icon: <Sparkles size={24} />, label: 'Particles' },
+                            ].map((option) => (
+                                <button
+                                    key={option.type}
+                                    onClick={() => onSelectWeather(option.type as WeatherType)}
+                                    className={`p-6 rounded-xl border-2 flex flex-col items-center gap-4 transition-all ${currentWeather === option.type
+                                        ? 'border-white bg-white/10 text-white'
+                                        : 'border-white/10 bg-white/5 text-white/60 hover:border-white/30 hover:text-white'
+                                        }`}
+                                >
+                                    {option.icon}
+                                    <span className="font-medium">{option.label}</span>
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>

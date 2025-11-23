@@ -11,6 +11,8 @@ export enum ThemeType {
   VINTAGE = 'vintage',
 }
 
+export type WeatherType = 'none' | 'rain' | 'snow' | 'fog' | 'particles';
+
 export interface Settings {
   focusDuration: number;
   shortBreakDuration: number;

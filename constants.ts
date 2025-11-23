@@ -10,7 +10,7 @@ export const DEFAULT_SETTINGS = {
 export const THEMES: Record<ThemeType, ThemeConfig> = {
   [ThemeType.NATURE]: {
     name: 'Nature',
-    bgImage: 'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2560&auto=format&fit=crop',
+    bgImage: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2560&auto=format&fit=crop',
     primaryColor: 'bg-emerald-500',
     accentColor: 'text-emerald-300',
     textColor: 'text-white',
@@ -48,12 +48,10 @@ export const BACKGROUND_IMAGES = [
   // Urban / Cafe
   { id: 'urban-1', name: 'Cozy Cafe', url: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=2560&auto=format&fit=crop', category: 'Urban' },
   { id: 'urban-2', name: 'City Night', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=2560&auto=format&fit=crop', category: 'Urban' },
-  { id: 'urban-3', name: 'Library', url: 'https://images.unsplash.com/photo-1507842217121-9d59754a5ce5?q=80&w=2560&auto=format&fit=crop', category: 'Urban' },
 
   // Minimal / Abstract
   { id: 'minimal-1', name: 'Lofi Room', url: 'https://images.unsplash.com/photo-1617325247661-675ab4b64ae2?q=80&w=2560&auto=format&fit=crop', category: 'Minimal' },
   { id: 'minimal-2', name: 'Abstract Waves', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2560&auto=format&fit=crop', category: 'Minimal' },
-  { id: 'minimal-3', name: 'Soft Gradient', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=2560&auto=format&fit=crop', category: 'Minimal' },
 
   // Tech
   { id: 'tech-1', name: 'Cyberpunk City', url: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2560&auto=format&fit=crop', category: 'Tech' },
@@ -61,8 +59,35 @@ export const BACKGROUND_IMAGES = [
   { id: 'tech-3', name: 'Space Station', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2560&auto=format&fit=crop', category: 'Tech' },
 ];
 
+export const MOTION_BACKGROUNDS = [
+  {
+    id: 'motion-1',
+    name: 'Rainy Window (Demo)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1534274988754-c6a60bf93217?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-2',
+    name: 'Forest Stream (Demo)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-3',
+    name: 'Abstract Ink (Demo)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-4',
+    name: 'Night City (Demo)',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=600&auto=format&fit=crop'
+  }
+];
+
 export const MOOD_CHANNELS: MoodChannel[] = [
-  { id: 'lofi', name: 'Lofi Girl', videoId: 'UCyYTt26D_yIn5i56z_kY5sQ', icon: '🎧', type: 'live' },
+  { id: 'lofi', name: 'Lofi Girl', videoId: 'JdqL89ZZwFw', icon: '🎧', type: 'video' },
   { id: 'piano', name: 'Peaceful Piano', videoId: 'CnPwgYo8aNk', icon: '🎹', type: 'video' },
   { id: 'forest', name: 'Forest Nature', videoId: 'STSB9Xjeznw', icon: '🌲', type: 'video' },
   { id: 'synth', name: 'Coding Synth', videoId: '4xDzrJKXOOY', icon: '💻', type: 'video' },
