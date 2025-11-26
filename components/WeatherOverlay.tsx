@@ -1,78 +1,100 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { WeatherType } from '../types';
 
 interface WeatherOverlayProps {
     type: WeatherType;
 }
 
-export const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ type }) => {
+// Generate stable random values outside component to prevent re-renders
+const generateParticles = (count: number, config: { 
+    minSize: number; 
+    maxSize: number;
+    minDuration: number;
+    maxDuration: number;
+    maxDelay: number;
+}) => {
+    return Array.from({ length: count }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        size: Math.random() * (config.maxSize - config.minSize) + config.minSize,
+        duration: Math.random() * (config.maxDuration - config.minDuration) + config.minDuration,
+        delay: Math.random() * config.maxDelay,
+    }));
+};
+
+// Pre-generate all particles once
+const rainParticles = generateParticles(100, { minSize: 10, maxSize: 30, minDuration: 0.5, maxDuration: 1, maxDelay: 2 });
+const snowParticles = generateParticles(80, { minSize: 2, maxSize: 8, minDuration: 5, maxDuration: 10, maxDelay: 5 });
+const starParticles = generateParticles(60, { minSize: 1, maxSize: 4, minDuration: 2, maxDuration: 5, maxDelay: 3 });
+
+export const WeatherOverlay: React.FC<WeatherOverlayProps> = React.memo(({ type }) => {
     if (type === 'none') return null;
 
     return (
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-            {/* Rain Effect - Improved */}
+        <div className="weather-overlay">
+            {/* Rain Effect */}
             {type === 'rain' && (
-                <div className="absolute inset-0">
-                    {[...Array(100)].map((_, i) => (
+                <div className="weather-container">
+                    {rainParticles.map((p) => (
                         <div
-                            key={i}
-                            className="absolute bg-gradient-to-b from-blue-200/80 to-blue-300/40 animate-rain-drop"
+                            key={p.id}
+                            className="rain-drop"
                             style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `-${Math.random() * 100}px`,
-                                width: '2px',
-                                height: `${Math.random() * 20 + 10}px`,
-                                animationDuration: `${Math.random() * 0.5 + 0.5}s`,
-                                animationDelay: `${Math.random() * 2}s`,
+                                left: `${p.left}%`,
+                                top: `-${p.top}px`,
+                                height: `${p.size}px`,
+                                animationDuration: `${p.duration}s`,
+                                animationDelay: `${p.delay}s`,
                             }}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Snow Effect - Enhanced */}
+            {/* Snow Effect */}
             {type === 'snow' && (
-                <div className="absolute inset-0">
-                    {[...Array(80)].map((_, i) => (
+                <div className="weather-container">
+                    {snowParticles.map((p) => (
                         <div
-                            key={i}
-                            className="absolute bg-white rounded-full opacity-80 animate-snow shadow-sm"
+                            key={p.id}
+                            className="snow-flake"
                             style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `-${Math.random() * 20}%`,
-                                width: `${Math.random() * 6 + 2}px`,
-                                height: `${Math.random() * 6 + 2}px`,
-                                animationDuration: `${Math.random() * 5 + 5}s`,
-                                animationDelay: `${Math.random() * 5}s`,
+                                left: `${p.left}%`,
+                                top: `-20px`,
+                                width: `${p.size}px`,
+                                height: `${p.size}px`,
+                                animationDuration: `${p.duration}s`,
+                                animationDelay: `${p.delay}s`,
                             }}
                         />
                     ))}
                 </div>
             )}
 
-            {/* Fog Effect - New */}
+            {/* Fog Effect */}
             {type === 'fog' && (
                 <>
-                    <div className="absolute inset-0 bg-gradient-to-b from-gray-200/20 via-gray-300/30 to-transparent animate-fog-1" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-200/20 via-gray-300/20 to-transparent animate-fog-2" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-fog-3" />
+                    <div className="fog-layer fog-1" />
+                    <div className="fog-layer fog-2" />
+                    <div className="fog-layer fog-3" />
                 </>
             )}
 
-            {/* Particles/Stars Effect - New */}
+            {/* Particles/Stars Effect */}
             {type === 'particles' && (
-                <div className="absolute inset-0">
-                    {[...Array(60)].map((_, i) => (
+                <div className="weather-container">
+                    {starParticles.map((p) => (
                         <div
-                            key={i}
-                            className="absolute bg-white rounded-full animate-particle"
+                            key={p.id}
+                            className="star-particle"
                             style={{
-                                left: `${Math.random() * 100}%`,
-                                top: `${Math.random() * 100}%`,
-                                width: `${Math.random() * 3 + 1}px`,
-                                height: `${Math.random() * 3 + 1}px`,
-                                animationDuration: `${Math.random() * 3 + 2}s`,
-                                animationDelay: `${Math.random() * 3}s`,
+                                left: `${p.left}%`,
+                                top: `${p.top}%`,
+                                width: `${p.size}px`,
+                                height: `${p.size}px`,
+                                animationDuration: `${p.duration}s`,
+                                animationDelay: `${p.delay}s`,
                             }}
                         />
                     ))}
@@ -80,50 +102,116 @@ export const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ type }) => {
             )}
 
             <style>{`
-                @keyframes rain-drop {
+                .weather-overlay {
+                    position: absolute;
+                    inset: 0;
+                    pointer-events: none;
+                    z-index: 1;
+                    overflow: hidden;
+                }
+
+                .weather-container {
+                    position: absolute;
+                    inset: 0;
+                }
+
+                /* Rain */
+                .rain-drop {
+                    position: absolute;
+                    width: 2px;
+                    background: linear-gradient(to bottom, rgba(147, 197, 253, 0.8), rgba(147, 197, 253, 0.3));
+                    border-radius: 2px;
+                    animation: rain-fall linear infinite;
+                    will-change: transform;
+                }
+
+                @keyframes rain-fall {
                     0% { 
                         transform: translateY(0) translateX(0);
                         opacity: 0;
                     }
-                    10% { opacity: 1; }
-                    90% { opacity: 1; }
+                    10% { opacity: 0.8; }
+                    90% { opacity: 0.8; }
                     100% { 
                         transform: translateY(100vh) translateX(10px);
                         opacity: 0;
                     }
                 }
-                
-                @keyframes snow {
+
+                /* Snow */
+                .snow-flake {
+                    position: absolute;
+                    background: white;
+                    border-radius: 50%;
+                    opacity: 0.9;
+                    box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+                    animation: snow-fall linear infinite;
+                    will-change: transform;
+                }
+
+                @keyframes snow-fall {
                     0% { 
                         transform: translateY(0) translateX(0) rotate(0deg);
                         opacity: 0;
                     }
-                    10% { opacity: 1; }
-                    90% { opacity: 1; }
+                    5% { opacity: 0.9; }
+                    95% { opacity: 0.9; }
                     100% { 
-                        transform: translateY(100vh) translateX(30px) rotate(360deg);
+                        transform: translateY(100vh) translateX(50px) rotate(360deg);
                         opacity: 0;
                     }
                 }
 
-                @keyframes fog-1 {
+                /* Fog */
+                .fog-layer {
+                    position: absolute;
+                    inset: 0;
+                    will-change: transform, opacity;
+                }
+
+                .fog-1 {
+                    background: linear-gradient(to bottom, rgba(200, 200, 200, 0.15), rgba(200, 200, 200, 0.25), transparent);
+                    animation: fog-move-1 20s ease-in-out infinite;
+                }
+
+                .fog-2 {
+                    background: linear-gradient(to top, rgba(200, 200, 200, 0.15), rgba(200, 200, 200, 0.2), transparent);
+                    animation: fog-move-2 25s ease-in-out infinite;
+                }
+
+                .fog-3 {
+                    background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+                    animation: fog-move-3 30s ease-in-out infinite;
+                }
+
+                @keyframes fog-move-1 {
                     0%, 100% { transform: translateX(-10%) translateY(0); opacity: 0.3; }
                     50% { transform: translateX(10%) translateY(-5%); opacity: 0.5; }
                 }
 
-                @keyframes fog-2 {
+                @keyframes fog-move-2 {
                     0%, 100% { transform: translateX(10%) translateY(0); opacity: 0.4; }
                     50% { transform: translateX(-10%) translateY(5%); opacity: 0.6; }
                 }
 
-                @keyframes fog-3 {
+                @keyframes fog-move-3 {
                     0%, 100% { transform: translateX(-20%); opacity: 0.2; }
                     50% { transform: translateX(20%); opacity: 0.4; }
                 }
 
-                @keyframes particle {
+                /* Particles/Stars */
+                .star-particle {
+                    position: absolute;
+                    background: white;
+                    border-radius: 50%;
+                    box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+                    animation: star-twinkle ease-in-out infinite;
+                    will-change: transform, opacity;
+                }
+
+                @keyframes star-twinkle {
                     0%, 100% { 
-                        opacity: 0;
+                        opacity: 0.2;
                         transform: scale(0.5);
                     }
                     50% { 
@@ -131,31 +219,9 @@ export const WeatherOverlay: React.FC<WeatherOverlayProps> = ({ type }) => {
                         transform: scale(1.2);
                     }
                 }
-                
-                .animate-rain-drop {
-                    animation: rain-drop linear infinite;
-                }
-                
-                .animate-snow {
-                    animation: snow linear infinite;
-                }
-
-                .animate-fog-1 {
-                    animation: fog-1 20s ease-in-out infinite;
-                }
-
-                .animate-fog-2 {
-                    animation: fog-2 25s ease-in-out infinite;
-                }
-
-                .animate-fog-3 {
-                    animation: fog-3 30s ease-in-out infinite;
-                }
-
-                .animate-particle {
-                    animation: particle ease-in-out infinite;
-                }
             `}</style>
         </div>
     );
-};
+});
+
+WeatherOverlay.displayName = 'WeatherOverlay';

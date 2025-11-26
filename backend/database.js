@@ -12,48 +12,96 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 db.serialize(() => {
-    // Settings table
-    db.run(`CREATE TABLE IF NOT EXISTS settings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    focusDuration INTEGER,
-    shortBreakDuration INTEGER,
-    longBreakDuration INTEGER,
-    dailyGoalHours REAL
-  )`);
+    // Users table
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT,
+        createdAt INTEGER
+    )`);
 
-    // Initialize default settings if not exists
-    db.get("SELECT * FROM settings LIMIT 1", (err, row) => {
-        if (!row) {
-            db.run(`INSERT INTO settings (focusDuration, shortBreakDuration, longBreakDuration, dailyGoalHours) VALUES (25, 5, 15, 4)`);
+    // Settings table - now with user_id
+    db.run(`CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
+        focusDuration INTEGER DEFAULT 25,
+        shortBreakDuration INTEGER DEFAULT 5,
+        longBreakDuration INTEGER DEFAULT 15,
+        dailyGoalHours REAL DEFAULT 4,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+
+    // Tasks table - now with user_id
+    db.run(`CREATE TABLE IF NOT EXISTS tasks (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        title TEXT,
+        completed INTEGER,
+        createdAt INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+
+    // Sessions (History) table - now with user_id
+    db.run(`CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT,
+        mode TEXT,
+        duration INTEGER,
+        completedAt INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+
+    // Theme table - now with user_id
+    db.run(`CREATE TABLE IF NOT EXISTS theme (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT UNIQUE,
+        currentTheme TEXT DEFAULT 'nature',
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+
+    // Migration: Add user_id column to existing tables if not exists
+    db.all("PRAGMA table_info(settings)", (err, columns) => {
+        const hasUserId = columns && columns.some(col => col.name === 'user_id');
+        if (!hasUserId) {
+            db.run("ALTER TABLE settings ADD COLUMN user_id TEXT", (err) => {
+                if (err && !err.message.includes('duplicate column')) {
+                    console.error('Migration error (settings):', err);
+                }
+            });
         }
     });
 
-    // Tasks table
-    db.run(`CREATE TABLE IF NOT EXISTS tasks (
-    id TEXT PRIMARY KEY,
-    title TEXT,
-    completed INTEGER,
-    createdAt INTEGER
-  )`);
+    db.all("PRAGMA table_info(tasks)", (err, columns) => {
+        const hasUserId = columns && columns.some(col => col.name === 'user_id');
+        if (!hasUserId) {
+            db.run("ALTER TABLE tasks ADD COLUMN user_id TEXT", (err) => {
+                if (err && !err.message.includes('duplicate column')) {
+                    console.error('Migration error (tasks):', err);
+                }
+            });
+        }
+    });
 
-    // Sessions (History) table
-    db.run(`CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    mode TEXT,
-    duration INTEGER,
-    completedAt INTEGER
-  )`);
+    db.all("PRAGMA table_info(sessions)", (err, columns) => {
+        const hasUserId = columns && columns.some(col => col.name === 'user_id');
+        if (!hasUserId) {
+            db.run("ALTER TABLE sessions ADD COLUMN user_id TEXT", (err) => {
+                if (err && !err.message.includes('duplicate column')) {
+                    console.error('Migration error (sessions):', err);
+                }
+            });
+        }
+    });
 
-    // Theme table
-    db.run(`CREATE TABLE IF NOT EXISTS theme (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    currentTheme TEXT
-  )`);
-
-    // Initialize default theme if not exists
-    db.get("SELECT * FROM theme LIMIT 1", (err, row) => {
-        if (!row) {
-            db.run(`INSERT INTO theme (currentTheme) VALUES ('nature')`);
+    db.all("PRAGMA table_info(theme)", (err, columns) => {
+        const hasUserId = columns && columns.some(col => col.name === 'user_id');
+        if (!hasUserId) {
+            db.run("ALTER TABLE theme ADD COLUMN user_id TEXT", (err) => {
+                if (err && !err.message.includes('duplicate column')) {
+                    console.error('Migration error (theme):', err);
+                }
+            });
         }
     });
 });

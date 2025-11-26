@@ -62,27 +62,51 @@ export const BACKGROUND_IMAGES = [
 export const MOTION_BACKGROUNDS = [
   {
     id: 'motion-1',
-    name: 'Rainy Window (Demo)',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    name: 'Rainy Window',
+    url: 'https://cdn.pixabay.com/video/2020/05/25/40130-424930032_large.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1534274988754-c6a60bf93217?q=80&w=600&auto=format&fit=crop'
   },
   {
     id: 'motion-2',
-    name: 'Forest Stream (Demo)',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=600&auto=format&fit=crop'
+    name: 'Cozy Fireplace',
+    url: 'https://cdn.pixabay.com/video/2021/01/22/63052-503841416_large.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1543931036-50a47c9a7c5f?q=80&w=600&auto=format&fit=crop'
   },
   {
     id: 'motion-3',
-    name: 'Abstract Ink (Demo)',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    thumbnail: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=600&auto=format&fit=crop'
+    name: 'Ocean Waves',
+    url: 'https://cdn.pixabay.com/video/2024/06/02/214742_large.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1505142468610-359e7d316be0?q=80&w=600&auto=format&fit=crop'
   },
   {
     id: 'motion-4',
-    name: 'Night City (Demo)',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    name: 'Night City Drive',
+    url: 'https://cdn.pixabay.com/video/2020/07/30/46026-445569498_large.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-5',
+    name: 'Aurora Borealis',
+    url: 'https://cdn.pixabay.com/video/2019/07/17/25123-349043616_large.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-6',
+    name: 'Clouds Timelapse',
+    url: 'https://cdn.pixabay.com/video/2016/09/21/5373-183629078_large.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1517483000871-1dbf64a6e1c6?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-7',
+    name: 'Forest Path',
+    url: 'https://videos.pexels.com/video-files/3045163/3045163-hd_1920_1080_30fps.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=600&auto=format&fit=crop'
+  },
+  {
+    id: 'motion-8',
+    name: 'Starry Night',
+    url: 'https://videos.pexels.com/video-files/2491284/2491284-hd_1920_1080_30fps.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?q=80&w=600&auto=format&fit=crop'
   }
 ];
 

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Image as ImageIcon, Sun, Play, Camera, User, CloudRain, CloudSnow, CloudOff, Cloud, Sparkles } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, Image as ImageIcon, Sun, Play, Camera, Upload, CloudRain, CloudSnow, CloudOff, Cloud, Sparkles, Trash2, Check } from 'lucide-react';
 import { ThemeType, WeatherType } from '../types';
 import { THEMES, BACKGROUND_IMAGES, MOTION_BACKGROUNDS } from '../constants';
 
@@ -13,6 +13,24 @@ interface ThemeSelectorProps {
     onSelectWeather: (weather: WeatherType) => void;
 }
 
+// Local storage key for custom backgrounds
+const CUSTOM_BACKGROUNDS_KEY = 'zenfocus_custom_backgrounds';
+
+// Get custom backgrounds from localStorage
+const getCustomBackgrounds = (): string[] => {
+    try {
+        const stored = localStorage.getItem(CUSTOM_BACKGROUNDS_KEY);
+        return stored ? JSON.parse(stored) : [];
+    } catch {
+        return [];
+    }
+};
+
+// Save custom backgrounds to localStorage
+const saveCustomBackgrounds = (backgrounds: string[]) => {
+    localStorage.setItem(CUSTOM_BACKGROUNDS_KEY, JSON.stringify(backgrounds));
+};
+
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     isOpen,
     onClose,
@@ -24,8 +42,70 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'background' | 'weather'>('background');
     const [activeSubTab, setActiveSubTab] = useState<'motion' | 'stills' | 'personalize'>('stills');
+    const [customBackgrounds, setCustomBackgrounds] = useState<string[]>(getCustomBackgrounds);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!isOpen) return null;
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadError('');
+        
+        // Validate file type
+        if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+            setUploadError('Please select a JPG, PNG, GIF, or WebP image');
+            return;
+        }
+
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+            setUploadError('Image must be less than 10MB');
+            return;
+        }
+
+        setIsUploading(true);
+
+        try {
+            // Convert to base64 for local storage
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const base64 = event.target?.result as string;
+                const newBackgrounds = [base64, ...customBackgrounds].slice(0, 10); // Keep max 10
+                setCustomBackgrounds(newBackgrounds);
+                saveCustomBackgrounds(newBackgrounds);
+                onSelectBackground(base64);
+                setIsUploading(false);
+            };
+            reader.onerror = () => {
+                setUploadError('Failed to read image');
+                setIsUploading(false);
+            };
+            reader.readAsDataURL(file);
+        } catch (error) {
+            setUploadError('Failed to upload image');
+            setIsUploading(false);
+        }
+
+        // Reset input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    const deleteCustomBackground = (index: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newBackgrounds = customBackgrounds.filter((_, i) => i !== index);
+        setCustomBackgrounds(newBackgrounds);
+        saveCustomBackgrounds(newBackgrounds);
+    };
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -68,38 +148,40 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                         </div>
 
                         {/* Sub Tabs */}
-                        <div className="flex gap-8 border-b border-white/10 w-full min-w-[600px]">
-                            <button
-                                onClick={() => setActiveSubTab('motion')}
-                                className={`pb-3 text-sm font-medium transition-all relative ${activeSubTab === 'motion' ? 'text-white' : 'text-white/40 hover:text-white/70'
-                                    }`}
-                            >
-                                Motion
-                                {activeSubTab === 'motion' && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-t-full" />
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setActiveSubTab('stills')}
-                                className={`pb-3 text-sm font-medium transition-all relative ${activeSubTab === 'stills' ? 'text-white' : 'text-white/40 hover:text-white/70'
-                                    }`}
-                            >
-                                Stills
-                                {activeSubTab === 'stills' && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-t-full" />
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setActiveSubTab('personalize')}
-                                className={`pb-3 text-sm font-medium transition-all relative ${activeSubTab === 'personalize' ? 'text-white' : 'text-white/40 hover:text-white/70'
-                                    }`}
-                            >
-                                Personalize
-                                {activeSubTab === 'personalize' && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-t-full" />
-                                )}
-                            </button>
-                        </div>
+                        {activeTab === 'background' && (
+                            <div className="flex gap-8 border-b border-white/10 w-full min-w-[600px]">
+                                <button
+                                    onClick={() => setActiveSubTab('motion')}
+                                    className={`pb-3 text-sm font-medium transition-all relative ${activeSubTab === 'motion' ? 'text-white' : 'text-white/40 hover:text-white/70'
+                                        }`}
+                                >
+                                    Motion
+                                    {activeSubTab === 'motion' && (
+                                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-t-full" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveSubTab('stills')}
+                                    className={`pb-3 text-sm font-medium transition-all relative ${activeSubTab === 'stills' ? 'text-white' : 'text-white/40 hover:text-white/70'
+                                        }`}
+                                >
+                                    Stills
+                                    {activeSubTab === 'stills' && (
+                                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-t-full" />
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setActiveSubTab('personalize')}
+                                    className={`pb-3 text-sm font-medium transition-all relative ${activeSubTab === 'personalize' ? 'text-white' : 'text-white/40 hover:text-white/70'
+                                        }`}
+                                >
+                                    Personalize
+                                    {activeSubTab === 'personalize' && (
+                                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-t-full" />
+                                    )}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <button
@@ -165,20 +247,70 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                     )}
 
                     {activeTab === 'background' && activeSubTab === 'personalize' && (
-                        <div className="flex flex-col items-center justify-center h-64">
-                            <div className="w-full max-w-md border-2 border-dashed border-white/20 rounded-2xl p-12 flex flex-col items-center justify-center text-center hover:border-white/40 hover:bg-white/5 transition-all cursor-pointer group">
+                        <div className="space-y-6">
+                            {/* Upload Area */}
+                            <div 
+                                onClick={handleUploadClick}
+                                className="w-full border-2 border-dashed border-white/20 rounded-2xl p-8 flex flex-col items-center justify-center text-center hover:border-white/40 hover:bg-white/5 transition-all cursor-pointer group"
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/gif,image/webp"
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
                                 <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <Camera size={32} className="text-white/80" />
+                                    {isUploading ? (
+                                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Upload size={28} className="text-white/80" />
+                                    )}
                                 </div>
-                                <h3 className="text-white font-medium mb-1">Bring your own photo</h3>
-                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider rounded mb-2">Plus</span>
-                                <p className="text-white/40 text-sm">Maximum 10MB • JPG, PNG, GIF</p>
+                                <h3 className="text-white font-medium mb-1">Upload your own photo</h3>
+                                <p className="text-white/40 text-sm">Click to browse • JPG, PNG, GIF, WebP • Max 10MB</p>
+                                {uploadError && (
+                                    <p className="text-red-400 text-sm mt-2">{uploadError}</p>
+                                )}
                             </div>
+
+                            {/* Custom Backgrounds Grid */}
+                            {customBackgrounds.length > 0 && (
+                                <div>
+                                    <h3 className="text-white/60 text-sm font-bold uppercase tracking-wider mb-4">Your Photos</h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {customBackgrounds.map((bg, index) => (
+                                            <div
+                                                key={index}
+                                                onClick={() => onSelectBackground(bg)}
+                                                className="group relative aspect-video rounded-xl overflow-hidden border-2 border-white/10 hover:border-white/50 transition-all cursor-pointer"
+                                            >
+                                                <img
+                                                    src={bg}
+                                                    alt={`Custom ${index + 1}`}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                                                    <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                                                        <Check size={16} className="text-white" />
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => deleteCustomBackground(index, e)}
+                                                        className="p-2 bg-red-500/80 backdrop-blur-sm rounded-lg hover:bg-red-500 transition-colors"
+                                                    >
+                                                        <Trash2 size={16} className="text-white" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {activeTab === 'weather' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                             {[
                                 { type: 'none', icon: <CloudOff size={24} />, label: 'None' },
                                 { type: 'rain', icon: <CloudRain size={24} />, label: 'Rain' },

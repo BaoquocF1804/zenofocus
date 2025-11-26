@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Play, Pause, RotateCcw, Settings as SettingsIcon,
-  Maximize, Minimize, Palette, Coffee, Clock, ListTodo, Moon, Sun
+  Maximize, Minimize, Palette, Coffee, Clock, ListTodo, Moon, Sun, LogOut, User, LogIn, Cloud, CloudOff
 } from 'lucide-react';
 import {
   TimerMode, ThemeType, Settings, Task, Session, WeatherType
@@ -13,9 +13,12 @@ import { Sidebar } from './components/Sidebar';
 import { SettingsModal } from './components/SettingsModal';
 import { ThemeSelector } from './components/ThemeSelector';
 import { WeatherOverlay } from './components/WeatherOverlay';
+import { AuthModal } from './components/AuthModal';
 
 import { BrownNoise } from './components/BrownNoise';
 import { api } from './src/api';
+import { generateUUID } from './src/utils';
+import { useAuth } from './src/AuthContext';
 
 // Sound effect for timer completion
 const playNotification = () => {
@@ -50,6 +53,8 @@ const isVideo = (url: string) => {
 };
 
 const App: React.FC = () => {
+  const { user, isAuthenticated, logout, isLoading: authLoading } = useAuth();
+  
   // --- Persisted State ---
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [theme, setTheme] = useState<ThemeType>(ThemeType.NATURE);
@@ -63,18 +68,22 @@ const App: React.FC = () => {
   const [isActive, setIsActive] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isThemeSelectorOpen, setIsThemeSelectorOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [bgImage, setBgImage] = useState(THEMES[theme].bgImage);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeMoodId, setActiveMoodId] = useState<string | null>(null);
   const [randomTip, setRandomTip] = useState('');
   const [isPanelVisible, setIsPanelVisible] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   // Ref for interval to clear it properly
   const intervalRef = useRef<number | null>(null);
 
   // --- Data Fetching ---
   useEffect(() => {
+    if (authLoading) return;
+    
     const fetchData = async () => {
       try {
         const [fetchedSettings, fetchedTheme, fetchedTasks, fetchedHistory] = await Promise.all([
@@ -96,7 +105,7 @@ const App: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [authLoading]);
 
   // --- Persistence Effects ---
   const handleSettingsChange = async (newSettings: Settings) => {
@@ -111,7 +120,7 @@ const App: React.FC = () => {
   // Update background when theme changes
   const handleThemeChange = async (newTheme: ThemeType) => {
     setTheme(newTheme);
-    setBgImage(THEMES[newTheme].bgImage); // Added this line
+    setBgImage(THEMES[newTheme].bgImage);
     try {
       await api.updateTheme(newTheme);
     } catch (error) {
@@ -122,17 +131,6 @@ const App: React.FC = () => {
   const handleBackgroundChange = (url: string) => {
     setBgImage(url);
   };
-
-  // Note: Tasks are handled via Sidebar, but we need to make sure Sidebar calls API or we wrap setTasks.
-  // Since Sidebar takes setTasks, we might need to modify Sidebar or pass a wrapped setter.
-  // For now, let's assume Sidebar manages local state and we sync, or better, pass callbacks.
-  // However, looking at Sidebar usage: <Sidebar tasks={tasks} setTasks={setTasks} ... />
-  // We should probably modify Sidebar to use API, OR wrap setTasks here.
-  // Wrapping setTasks is tricky if Sidebar uses functional updates.
-  // Let's modify Sidebar to accept callbacks instead of setTasks, or intercept changes.
-  // Actually, the easiest way without refactoring Sidebar too much is to let Sidebar call API.
-  // But Sidebar is a child. Let's see Sidebar code first.
-  // Assuming I will refactor Sidebar to take onAdd, onToggle, onDelete props.
 
   // --- Timer Logic ---
   // Reset timer when settings change or mode changes (if not active)
@@ -171,7 +169,7 @@ const App: React.FC = () => {
     // Record History if Focus
     if (mode === TimerMode.FOCUS) {
       const newSession: Session = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         mode: TimerMode.FOCUS,
         duration: settings.focusDuration * 60,
         completedAt: Date.now(),
@@ -229,8 +227,6 @@ const App: React.FC = () => {
     }
   };
 
-
-
   // --- Derived Data ---
   const currentTheme = THEMES[theme];
 
@@ -257,7 +253,12 @@ const App: React.FC = () => {
           src={bgImage}
           onError={(e) => {
             console.error("Video failed to load:", bgImage);
+            // Hide the video and fall back to the default theme background
             e.currentTarget.style.display = 'none';
+            const parent = e.currentTarget.parentElement;
+            if (parent) {
+              parent.style.backgroundImage = `url(${THEMES[theme].bgImage})`;
+            }
           }}
         />
       )}
@@ -278,6 +279,66 @@ const App: React.FC = () => {
                 <Coffee size={20} className="text-white" />
               </div>
               <span className="text-white font-bold text-lg tracking-tight">ZenFocus</span>
+            </div>
+
+            {/* User/Login Button */}
+            <div className="absolute top-4 right-6">
+              {isAuthenticated ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-200 border border-white/10"
+                  >
+                    <div className="w-7 h-7 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center">
+                      <User size={14} className="text-white" />
+                    </div>
+                    <span className="text-white/80 text-sm font-medium max-w-[100px] truncate hidden sm:block">
+                      {user?.name || user?.email?.split('@')[0] || 'User'}
+                    </span>
+                    <Cloud size={14} className="text-emerald-400" title="Synced" />
+                  </button>
+                  
+                  {showUserMenu && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowUserMenu(false)}
+                      ></div>
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-black/80 backdrop-blur-xl rounded-xl border border-white/10 shadow-xl z-50 overflow-hidden animate-fade-in-up">
+                        <div className="px-4 py-3 border-b border-white/10">
+                          <div className="flex items-center gap-2">
+                            <Cloud size={12} className="text-emerald-400" />
+                            <span className="text-emerald-400 text-xs">Synced</span>
+                          </div>
+                          <p className="text-white font-medium text-sm truncate mt-1">{user?.name || 'User'}</p>
+                          <p className="text-white/50 text-xs truncate">{user?.email}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            logout();
+                          }}
+                          className="w-full px-4 py-3 text-left text-red-400 hover:bg-white/5 transition-colors flex items-center gap-2 text-sm"
+                        >
+                          <LogOut size={16} />
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all duration-200 border border-white/10 group"
+                >
+                  <CloudOff size={16} className="text-white/40 group-hover:text-white/60" />
+                  <span className="text-white/60 group-hover:text-white/80 text-sm font-medium hidden sm:block">
+                    Sign in to sync
+                  </span>
+                  <LogIn size={16} className="text-white/60 group-hover:text-white sm:hidden" />
+                </button>
+              )}
             </div>
 
 
@@ -502,6 +563,11 @@ const App: React.FC = () => {
         onSelectBackground={handleBackgroundChange}
         currentWeather={weather}
         onSelectWeather={setWeather}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
     </div>
   );
